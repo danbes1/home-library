@@ -1,0 +1,6 @@
+*.dll
+*.so
+*.dylib
+
+.env
+.vscode/

@@ -1,0 +1,91 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"home-library/internal/config"
+	"home-library/internal/handler"
+	"home-library/internal/repository"
+	"home-library/internal/service"
+	"log"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func main() {
+	cfg := config.LoadConfig()
+	ctx := context.Background()
+
+	dbPool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		fmt.Printf("Не удалось подключиться к БД: %v\n", err)
+		return
+	}
+	defer dbPool.Close()
+
+	bookRepo := repository.NewBookRepository(dbPool)
+	userRepo := repository.NewUserRepository(dbPool)
+	loanRepo := repository.NewLoanRepository(dbPool)
+
+	isbnSvc := service.NewISBNService(cfg.GoogleBooksAPIKey)
+	barcodeSvc := service.NewBarcodeService()
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret)
+
+	if cfg.TelegramBotToken != "" {
+		go func() {
+			log.Printf("Фоновая инициализация Telegram-бота...\n")
+
+			tgbot, err := service.NewTgBotService(cfg.TelegramBotToken, bookRepo, loanRepo, isbnSvc, barcodeSvc)
+			if err != nil {
+				log.Printf("Ошибка инициализации Telegram-бота: %v\n", err)
+				return
+			}
+			tgbot.Start()
+		}()
+	}
+
+	bookHandler := handler.NewBookHandler(bookRepo, isbnSvc, barcodeSvc)
+	authHandler := handler.NewAuthHandler(authSvc)
+	loanHandler := handler.NewLoanHandler(loanRepo)
+
+	r := chi.NewRouter()
+
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			next.ServeHTTP(w, req)
+		})
+	})
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"message": "Добро пожаловать в домашнюю библиотеку!"}`))
+	})
+
+	r.Post("/register", authHandler.Register)
+	r.Post("/login", authHandler.Login)
+
+	r.Group(func(subRouter chi.Router) {
+		subRouter.Use(handler.AuthMiddleware(cfg.JWTSecret))
+
+		subRouter.Get("/books", bookHandler.GetAll)
+		subRouter.Post("/books", bookHandler.Create)
+		subRouter.Post("/books/scan", bookHandler.Scan)
+
+		subRouter.Post("/loans", loanHandler.Create)
+		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
+		subRouter.Get("/loans/return", loanHandler.ReturnBook)
+
+	})
+
+	fmt.Printf("Сервер запущен на порту %s\n", cfg.Port)
+
+	if err := http.ListenAndServe(cfg.Port, r); err != nil {
+		fmt.Printf("Ошибка при запуске сервера: %v\n", err)
+	}
+}

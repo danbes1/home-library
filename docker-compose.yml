@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  lib-postgres:
+    image: postgres:17-alpine
+    container_name: library_db
+    environment:
+      POSTGRES_USER: lib_user
+      POSTGRES_PASSWORD: lib_password
+      POSTGRES_DB: home_library
+    ports:
+      - "54325:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
