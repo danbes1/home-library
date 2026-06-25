@@ -38,7 +38,7 @@ func main() {
 		go func() {
 			log.Printf("Фоновая инициализация Telegram-бота...\n")
 
-			tgbot, err := service.NewTgBotService(cfg.TelegramBotToken, bookRepo, loanRepo, isbnSvc, barcodeSvc)
+			tgbot, err := service.NewTgBotService(cfg.TelegramBotToken, bookRepo, loanRepo, userRepo, isbnSvc, barcodeSvc)
 			if err != nil {
 				log.Printf("Ошибка инициализации Telegram-бота: %v\n", err)
 				return
