@@ -13,6 +13,7 @@ type Config struct {
 	GoogleBooksAPIKey string
 	JWTSecret         string
 	TelegramBotToken  string
+	TelegramBotName   string
 }
 
 func LoadConfig() *Config {
@@ -26,6 +27,7 @@ func LoadConfig() *Config {
 		GoogleBooksAPIKey: getEnv("GOOGLE_BOOKS_API_KEY", "<PASTE-YOUR-API-KEY>"),
 		JWTSecret:         getEnv("JWT_SECRET", "<PASTE-YOUR-JWT-SECRET>"),
 		TelegramBotToken:  getEnv("TELEGRAM_BOT_TOKEN", ""),
+		TelegramBotName:   getEnv("TELEGRAM_BOT_NAME", ""),
 	}
 }
 

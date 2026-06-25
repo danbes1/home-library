@@ -48,7 +48,7 @@ func main() {
 	}
 
 	bookHandler := handler.NewBookHandler(bookRepo, isbnSvc, barcodeSvc)
-	authHandler := handler.NewAuthHandler(authSvc)
+	authHandler := handler.NewAuthHandler(authSvc, userRepo, cfg.TelegramBotName)
 	loanHandler := handler.NewLoanHandler(loanRepo)
 
 	r := chi.NewRouter()
@@ -81,6 +81,7 @@ func main() {
 		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
 		subRouter.Get("/loans/return", loanHandler.ReturnBook)
 
+		subRouter.Post("/auth/tg-token", authHandler.GenerateTelegramToken)
 	})
 
 	fmt.Printf("Сервер запущен на порту %s\n", cfg.Port)
