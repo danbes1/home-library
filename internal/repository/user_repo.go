@@ -8,6 +8,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type UserRepoInterface interface {
+	Create(ctx context.Context, name, email, passwordHash string) (int, error)
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
+}
+
 type UserRepository struct {
 	db *pgxpool.Pool
 }

@@ -36,7 +36,7 @@ func NewTgBotService(token string, br *repository.BookRepository, lr *repository
 }
 
 func (s *TgBotService) Start() {
-	log.Printf("Tg bot @%s успешно запущен!", &s.bot.Self.UserName)
+	log.Printf("Tg bot @%s успешно запущен!", s.bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
