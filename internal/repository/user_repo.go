@@ -94,3 +94,32 @@ func (r *UserRepository) LinkTelegramByToken(ctx context.Context, token string, 
 	}
 	return &u, nil
 }
+
+func (r *UserRepository) CreateFamily(ctx context.Context, name string) (int, error) {
+	query := `INSERT INTO families (name) VALUES ($1) RETURNING id`
+	var id int
+	err := r.db.QueryRow(ctx, query, name).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create family: %w", err)
+	}
+	return id, nil
+}
+
+func (r *UserRepository) UpdateFamilyID(ctx context.Context, userID int, familyID int) error {
+	query := `UPDATE users SET family_id = $1 WHERE id = $2`
+	cmdTag, err := r.db.Exec(ctx, query, familyID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update user family: %w", err)
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("user with ID %d not found", userID)
+	}
+	return nil
+}
+
+func (r *UserRepository) CheckFamilyExists(ctx context.Context, familyID int) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM families WHERE id = $1)`
+	var exists bool
+	err := r.db.QueryRow(ctx, query, familyID).Scan(&exists)
+	return exists, err
+}

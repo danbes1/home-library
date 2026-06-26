@@ -77,3 +77,21 @@ func (h *WebHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl.Execute(w, nil)
 }
+
+func (h *WebHandler) RegisterPage(w http.ResponseWriter, r *http.Request) {
+	if _, err := r.Cookie("jwt_token"); err == nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	tmpl, _ := template.ParseFiles(filepath.Join("web", "templates", "register.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, nil)
+}
+
+func (h *WebHandler) AddBookPage(w http.ResponseWriter, r *http.Request) {
+	basePath := filepath.Join("web", "templates", "base.html")
+	pagePath := filepath.Join("web", "templates", "add-book.html")
+	tmpl, _ := template.ParseFiles(basePath, pagePath)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.ExecuteTemplate(w, "base", nil)
+}

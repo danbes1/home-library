@@ -50,6 +50,7 @@ func main() {
 	bookHandler := handler.NewBookHandler(bookRepo, isbnSvc, barcodeSvc)
 	authHandler := handler.NewAuthHandler(authSvc, userRepo, cfg.TelegramBotName)
 	loanHandler := handler.NewLoanHandler(loanRepo)
+	familyHandler := handler.NewFamilyHandler(userRepo)
 
 	webHandler := handler.NewWebHandler(bookRepo, userRepo)
 
@@ -77,19 +78,25 @@ func main() {
 
 	r.Get("/login", webHandler.LoginPage)
 	r.Post("/login", authHandler.Login)
+	r.Get("/register", webHandler.RegisterPage)
 	r.Post("/register", authHandler.Register)
 
 	r.Group(func(subRouter chi.Router) {
 		subRouter.Use(handler.AuthMiddleware(cfg.JWTSecret))
 
 		subRouter.Get("/", webHandler.IndexPage)
+
 		subRouter.Get("/books", bookHandler.GetAll)
 		subRouter.Post("/books", bookHandler.Create)
+		subRouter.Get("/books/add", webHandler.AddBookPage)
 		subRouter.Post("/books/scan", bookHandler.Scan)
 
 		subRouter.Post("/loans", loanHandler.Create)
 		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
 		subRouter.Get("/loans/return", loanHandler.ReturnBook)
+
+		subRouter.Post("/family/create", familyHandler.Create)
+		subRouter.Post("/family/join", familyHandler.Join)
 
 		subRouter.Post("/auth/tg-token", authHandler.GenerateTelegramToken)
 	})

@@ -21,6 +21,40 @@
         </div>
     </div>
 
+    <div class="bg-white p-6 rounded-2xl border border-gray-200">
+        <h3 class="text-base font-bold text-gray-800 mb-2">👪 Семейная библиотека</h3>
+        
+        {{if .User.FamilyID}}
+            <div class="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <div>
+                    <p class="text-sm font-medium text-indigo-900">Вы состоите в семейной группе</p>
+                    <p class="text-xs text-indigo-600 mt-0.5">Код вашей семьи: <strong class="select-all bg-indigo-200 px-1.5 py-0.5 rounded-sm text-indigo-900">{{.User.FamilyID}}</strong></p>
+                </div>
+                <span class="text-xs text-gray-400">Используйте этот код на втором устройстве</span>
+            </div>
+        {{else}}
+            <div class="space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
+                <form action="/family/create" method="POST" class="flex-1 flex gap-2">
+                    <input type="text" name="family_name" placeholder="Название семьи (например, Ивановы)" required
+                           class="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap cursor-pointer">
+                        Создать семью
+                    </button>
+                </form>
+
+                <div class="text-center text-xs text-gray-400 md:my-0 my-2">или</div>
+
+                <form action="/family/join" method="POST" class="flex-1 flex gap-2">
+                    <input type="number" name="family_id" placeholder="Ввести ID семьи супруга" required
+                           class="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap cursor-pointer">
+                        Войти в семью
+                    </button>
+                </form>
+            </div>
+        {{end}}
+    </div>
+
     <div>
         <h3 class="text-lg font-bold text-gray-800 mb-4">Книги на полках ({{len .Books}})</h3>
         
