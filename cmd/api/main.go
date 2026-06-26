@@ -38,7 +38,7 @@ func main() {
 		go func() {
 			log.Printf("Фоновая инициализация Telegram-бота...\n")
 
-			tgbot, err := service.NewTgBotService(cfg.TelegramBotToken, bookRepo, loanRepo, isbnSvc, barcodeSvc)
+			tgbot, err := service.NewTgBotService(cfg.TelegramBotToken, bookRepo, loanRepo, userRepo, isbnSvc, barcodeSvc)
 			if err != nil {
 				log.Printf("Ошибка инициализации Telegram-бота: %v\n", err)
 				return
@@ -48,8 +48,10 @@ func main() {
 	}
 
 	bookHandler := handler.NewBookHandler(bookRepo, isbnSvc, barcodeSvc)
-	authHandler := handler.NewAuthHandler(authSvc)
+	authHandler := handler.NewAuthHandler(authSvc, userRepo, cfg.TelegramBotName)
 	loanHandler := handler.NewLoanHandler(loanRepo)
+
+	webHandler := handler.NewWebHandler(bookRepo, userRepo)
 
 	r := chi.NewRouter()
 
@@ -63,16 +65,21 @@ func main() {
 		})
 	})
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"message": "Добро пожаловать в домашнюю библиотеку!"}`))
+	r.Get("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./web/manifest.json")
+	})
+	r.Get("/sw.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./web/sw.js")
 	})
 
-	r.Post("/register", authHandler.Register)
+	r.Get("/login", webHandler.LoginPage)
 	r.Post("/login", authHandler.Login)
+	r.Post("/register", authHandler.Register)
 
 	r.Group(func(subRouter chi.Router) {
 		subRouter.Use(handler.AuthMiddleware(cfg.JWTSecret))
 
+		subRouter.Get("/", webHandler.IndexPage)
 		subRouter.Get("/books", bookHandler.GetAll)
 		subRouter.Post("/books", bookHandler.Create)
 		subRouter.Post("/books/scan", bookHandler.Scan)
@@ -81,6 +88,7 @@ func main() {
 		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
 		subRouter.Get("/loans/return", loanHandler.ReturnBook)
 
+		subRouter.Post("/auth/tg-token", authHandler.GenerateTelegramToken)
 	})
 
 	fmt.Printf("Сервер запущен на порту %s\n", cfg.Port)

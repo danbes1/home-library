@@ -16,10 +16,16 @@ func NewBookRepository(dbPool *pgxpool.Pool) *BookRepository {
 	return &BookRepository{db: dbPool}
 }
 
-func (r *BookRepository) GetAll(ctx context.Context) ([]models.Book, error) {
-	query := `SELECT id, owner_id, title, authors, isbn, description, created_at FROM books`
+func (r *BookRepository) GetAll(ctx context.Context, userID int) ([]models.Book, error) {
+	query := `
+		SELECT b.id, b.owner_id, b.title, b.authors, b.isbn, b.description, b.created_at 
+		FROM books b
+		JOIN users u ON b.owner_id = u.id
+		WHERE u.id = $1 
+		   OR (u.family_id IS NOT NULL AND u.family_id = (SELECT family_id FROM users WHERE id = $1))
+	`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}

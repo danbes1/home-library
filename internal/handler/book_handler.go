@@ -25,7 +25,14 @@ func (h *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	books, err := h.bookRepo.GetAll(ctx)
+	userID, ok := GetUserIDFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Пользователь не аутентифицирован"})
+		return
+	}
+
+	books, err := h.bookRepo.GetAll(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 

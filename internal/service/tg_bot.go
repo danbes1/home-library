@@ -16,11 +16,12 @@ type TgBotService struct {
 	bot        *tgbotapi.BotAPI
 	bookRepo   *repository.BookRepository
 	loanRepo   *repository.LoanRepository
+	userRepo   *repository.UserRepository
 	isbnSvc    *ISBNService
 	barcodeSvc *BarcodeService
 }
 
-func NewTgBotService(token string, br *repository.BookRepository, lr *repository.LoanRepository, isbn *ISBNService, bar *BarcodeService) (*TgBotService, error) {
+func NewTgBotService(token string, br *repository.BookRepository, lr *repository.LoanRepository, ur *repository.UserRepository, isbn *ISBNService, bar *BarcodeService) (*TgBotService, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
@@ -30,6 +31,7 @@ func NewTgBotService(token string, br *repository.BookRepository, lr *repository
 		bot:        bot,
 		bookRepo:   br,
 		loanRepo:   lr,
+		userRepo:   ur,
 		isbnSvc:    isbn,
 		barcodeSvc: bar,
 	}, nil
@@ -56,8 +58,13 @@ func (s *TgBotService) Start() {
 		if update.Message.IsCommand() {
 			switch update.Message.Command() {
 			case "start":
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! Я бот твоей домашней библиотеки.\n\n📸 Отправь мне фото штрих-кода книги, чтобы добавить её.\n📋 Пиши /debtors, чтобы увидеть список должников.")
-				s.bot.Send(msg)
+				args := update.Message.CommandArguments()
+				if args != "" {
+					go s.handleTelegramBinding(update.Message, args)
+				} else {
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет! Я бот твоей домашней библиотеки.\n\n📸 Отправь мне фото штрих-кода книги, чтобы добавить её.\n📋 Пиши /debtors, чтобы увидеть список должников.")
+					s.bot.Send(msg)
+				}
 			case "debtors":
 				go s.handleDebtors(update.Message)
 			default:
@@ -72,8 +79,13 @@ func (s *TgBotService) handleDebtors(msg *tgbotapi.Message) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Позднее буду связывать с конкретным пользователем...
-	loans, err := s.loanRepo.GetActiveLoans(ctx, 1)
+	user, err := s.userRepo.GetByTelegramChatID(ctx, msg.Chat.ID)
+	if err != nil {
+		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ты не авторизован в системе. Сделай привязку через личный кабинет."))
+		return
+	}
+
+	loans, err := s.loanRepo.GetActiveLoans(ctx, user.ID)
 	if err != nil {
 		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ошибка получения списка должников ❌"))
 		return
@@ -93,6 +105,15 @@ func (s *TgBotService) handleDebtors(msg *tgbotapi.Message) {
 }
 
 func (s *TgBotService) handlePhoto(msg *tgbotapi.Message) {
+	ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
+	defer cancel()
+
+	user, err := s.userRepo.GetByTelegramChatID(ctx, msg.Chat.ID)
+	if err != nil {
+		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ты не авторизован в системе. Сделай привязку через личный кабинет."))
+		return
+	}
+
 	s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Сканирую фотографию... 🔍"))
 
 	photo := msg.Photo[len(msg.Photo)-1]
@@ -117,9 +138,6 @@ func (s *TgBotService) handlePhoto(msg *tgbotapi.Message) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
-	defer cancel()
-
 	bookInfo, err := s.isbnSvc.FetchBookInfo(ctx, isbnCode)
 	if err != nil {
 		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Штрих-код считан: `%s`,\nно книга не найдена во внешних базах 🤷‍♂️", isbnCode)))
@@ -127,7 +145,7 @@ func (s *TgBotService) handlePhoto(msg *tgbotapi.Message) {
 	}
 
 	newBook := models.Book{
-		OwnerID:     1,
+		OwnerID:     user.ID,
 		Title:       bookInfo.Title,
 		Authors:     bookInfo.Authors,
 		ISBN:        isbnCode,
@@ -144,4 +162,18 @@ func (s *TgBotService) handlePhoto(msg *tgbotapi.Message) {
 	reply := tgbotapi.NewMessage(msg.Chat.ID, successMsg)
 	reply.ParseMode = "Markdown"
 	s.bot.Send(reply)
+}
+
+func (s *TgBotService) handleTelegramBinding(msg *tgbotapi.Message, token string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	user, err := s.userRepo.LinkTelegramByToken(ctx, token, msg.Chat.ID)
+	if err != nil {
+		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Ошибка авторизации: ссылка устарела или токен неверен."))
+		return
+	}
+
+	successMsg := fmt.Sprintf("🎉 Успех, %s! Твой Telegram успешно связан с домашней библиотекой. Теперь ты можешь добавлять книги со своего аккаунта!", user.Name)
+	s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, successMsg))
 }

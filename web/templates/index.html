@@ -1,0 +1,71 @@
+{{define "title"}}Главная{{end}}
+
+{{define "content"}}
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">Привет, {{.User.Name}}! 👋</h2>
+            <p class="text-sm text-gray-500">Библиотека вашей семьи объединена.</p>
+        </div>
+        
+        <div>
+            {{if .User.TelegramChatID}}
+                <div class="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl text-sm font-medium border border-green-200">
+                    <span>🤖 Telegram привязан</span>
+                </div>
+            {{else}}
+                <button onclick="bindTelegram()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer">
+                    🔗 Привязать Telegram-боты
+                </button>
+            {{end}}
+        </div>
+    </div>
+
+    <div>
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Книги на полках ({{len .Books}})</h3>
+        
+        {{if .Books}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {{range .Books}}
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-gray-900 leading-tight mb-1">{{.Title}}</h4>
+                            <p class="text-sm text-gray-500 mb-2">{{range .Authors}}{{.}}{{end}}</p>
+                            {{if .Description}}
+                                <p class="text-xs text-gray-400 line-clamp-2 mb-4">{{.Description}}</p>
+                            {{end}}
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
+                            <span class="text-gray-400">ISBN: {{.ISBN}}</span>
+                            <span class="px-2 py-1 rounded-sm bg-gray-100 text-gray-600 font-medium">
+                                {{if eq .OwnerID $.User.ID}}Моя книга{{else}}Книга супруга{{end}}
+                            </span>
+                        </div>
+                    </div>
+                {{end}}
+            </div>
+        {{else}}
+            <div class="text-center py-12 bg-white rounded-2xl border border-gray-200">
+                <p class="text-gray-500">На полках пока пусто 🥞</p>
+                <p class="text-xs text-gray-400 mt-1">Отправьте фото штрих-кода боту, чтобы добавить первую книгу.</p>
+            </div>
+        {{end}}
+    </div>
+</div>
+
+<script>
+    async function bindTelegram() {
+        try {
+            const response = await fetch('/auth/tg-token', { method: 'POST' });
+            if (!response.ok) throw new Error('Ошибка генерации токена');
+            
+            const data = await response.json();
+            if (data.link) {
+                window.location.href = data.link;
+            }
+        } catch (err) {
+            alert('Не удалось связать аккаунт: ' + err.message);
+        }
+    }
+</script>
+{{end}}
