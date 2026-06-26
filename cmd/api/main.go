@@ -65,6 +65,9 @@ func main() {
 		})
 	})
 
+	fileServer := http.FileServer(http.Dir("./web/static"))
+	r.Handle("/static/*", http.StripPrefix("/static", fileServer))
+
 	r.Get("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./web/manifest.json")
 	})
