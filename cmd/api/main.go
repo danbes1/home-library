@@ -51,6 +51,8 @@ func main() {
 	authHandler := handler.NewAuthHandler(authSvc, userRepo, cfg.TelegramBotName)
 	loanHandler := handler.NewLoanHandler(loanRepo)
 
+	webHandler := handler.NewWebHandler(bookRepo, userRepo)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -63,16 +65,24 @@ func main() {
 		})
 	})
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"message": "Добро пожаловать в домашнюю библиотеку!"}`))
+	r.Get("/manifest.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./web/manifest.json")
+	})
+	r.Get("/sw.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./web/sw.js")
 	})
 
 	r.Post("/register", authHandler.Register)
 	r.Post("/login", authHandler.Login)
 
+	r.Get("/login", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("страница логина"))
+	})
+
 	r.Group(func(subRouter chi.Router) {
 		subRouter.Use(handler.AuthMiddleware(cfg.JWTSecret))
 
+		subRouter.Get("/", webHandler.IndexPage)
 		subRouter.Get("/books", bookHandler.GetAll)
 		subRouter.Post("/books", bookHandler.Create)
 		subRouter.Post("/books/scan", bookHandler.Scan)

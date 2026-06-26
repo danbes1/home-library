@@ -39,6 +39,18 @@ func (r *UserRepository) Create(ctx context.Context, name, email, passwordHash s
 	return id, nil
 }
 
+func (r *UserRepository) GetByID(ctx context.Context, userID int) (*models.User, error) {
+	query := `SELECT id, name, email, password_hash, family_id, created_at FROM users WHERE id = $1`
+
+	var u models.User
+
+	err := r.db.QueryRow(ctx, query, userID).Scan(&u.ID, &u.Name, &u.Email, &u.PasswordHash, &u.FamilyID, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `SELECT id, name, email, password_hash, created_at FROM users WHERE email = $1`
 
@@ -50,6 +62,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	}
 	return &u, nil
 }
+
 func (r *UserRepository) GetByTelegramChatID(ctx context.Context, chatID int64) (*models.User, error) {
 	query := `SELECT id, name, email, password_hash, family_id, created_at FROM users WHERE telegram_chat_id = $1`
 	var u models.User
