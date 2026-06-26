@@ -72,12 +72,9 @@ func main() {
 		http.ServeFile(w, r, "./web/sw.js")
 	})
 
-	r.Post("/register", authHandler.Register)
+	r.Get("/login", webHandler.LoginPage)
 	r.Post("/login", authHandler.Login)
-
-	r.Get("/login", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("страница логина"))
-	})
+	r.Post("/register", authHandler.Register)
 
 	r.Group(func(subRouter chi.Router) {
 		subRouter.Use(handler.AuthMiddleware(cfg.JWTSecret))

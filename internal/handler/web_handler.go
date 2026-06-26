@@ -60,3 +60,20 @@ func (h *WebHandler) IndexPage(w http.ResponseWriter, r *http.Request) {
 
 	tmpl.ExecuteTemplate(w, "base", data)
 }
+
+func (h *WebHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
+	if _, err := r.Cookie("jwt_token"); err == nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	pagePath := filepath.Join("web", "templates", "login.html")
+	tmpl, err := template.ParseFiles(pagePath)
+	if err != nil {
+		http.Error(w, "Ошибка компиляции шаблона: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, nil)
+}
