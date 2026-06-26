@@ -11,6 +11,10 @@ services:
     environment:
       - PORT=${PORT}
       - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_BOT_NAME=${TELEGRAM_BOT_NAME}
     env_file:
       - .env
     depends_on:
