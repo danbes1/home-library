@@ -63,7 +63,7 @@
                 <input type="text" id="res-isbn" 
                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm text-gray-500 bg-gray-50">
             </div>
-
+            <input type="hidden" id="res-cover">
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Описание / Аннотация</label>
                 <textarea id="res-description" rows="4" 
@@ -111,6 +111,7 @@
         document.getElementById('res-authors').value = data.authors ? data.authors.join(', ') : '';
         document.getElementById('res-isbn').value = data.isbn || document.getElementById('isbn-input').value || '';
         document.getElementById('res-description').value = data.description || '';
+        document.getElementById('res-cover').value = data.cover_url || '';
         
         document.getElementById('result-form-wrapper').classList.remove('hidden');
     }
@@ -170,7 +171,8 @@
 			title: document.getElementById('res-title').value,
 			authors: authorsArray,
 			isbn: document.getElementById('res-isbn').value,
-			description: document.getElementById('res-description').value
+			description: document.getElementById('res-description').value,
+            cover_url: document.getElementById('res-cover').value,
 		};
 
         try {
@@ -182,7 +184,7 @@
 
             if (!response.ok) throw new Error('Ошибка сохранения книги в базу');
 
-            window.location.href = '/';
+            // window.location.href = '/';
         } catch (err) {
             alert(err.message);
         }
