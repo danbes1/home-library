@@ -91,6 +91,8 @@ func main() {
 		subRouter.Get("/books/add", webHandler.AddBookPage)
 		subRouter.Post("/books/scan", bookHandler.Scan)
 
+		subRouter.Get("/books/isbn", bookHandler.ExternalSearchByISBN)
+
 		subRouter.Post("/loans", loanHandler.Create)
 		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
 		subRouter.Get("/loans/return", loanHandler.ReturnBook)

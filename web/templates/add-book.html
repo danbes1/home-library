@@ -1,45 +1,191 @@
 {{define "title"}}Добавить книгу{{end}}
 
 {{define "content"}}
-<div class="max-w-xl mx-auto bg-white p-6 rounded-2xl border border-gray-200">
-    <div class="mb-6">
-        <h2 class="text-xl font-bold text-gray-900">Добавление книги вручную</h2>
-        <p class="text-xs text-gray-500 mt-1">Заполните поля, чтобы поставить книгу на семейную полку</p>
+<div class="max-w-xl mx-auto space-y-6">
+    
+    <div class="bg-white p-4 rounded-2xl border border-gray-200 flex justify-around gap-2">
+        <button onclick="switchTab('isbn')" id="tab-isbn" class="flex-1 text-center py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white transition-colors cursor-pointer">
+            🆔 По ISBN коду
+        </button>
+        <button onclick="switchTab('scan')" id="tab-scan" class="flex-1 text-center py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">
+            📷 Сканировать фото
+        </button>
     </div>
 
-    <form action="/books" method="POST" class="space-y-4">
-        <div>
-            <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Название книги</label>
-            <input type="text" id="title" name="title" required 
-                   class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
-        </div>
-
-        <div>
-            <label for="authors" class="block text-sm font-medium text-gray-700 mb-1">Авторы (через запятую)</label>
-            <input type="text" id="authors" name="authors" placeholder="Алан Донован, Брайан Керниган" required 
-                   class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
-        </div>
-
-        <div>
-            <label for="isbn" class="block text-sm font-medium text-gray-700 mb-1">ISBN (необязательно)</label>
-            <input type="text" id="isbn" name="isbn" 
-                   class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm">
-        </div>
-
-        <div>
-            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Описание / Заметки</label>
-            <textarea id="description" name="description" rows="3" 
-                      class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"></textarea>
-        </div>
-
-        <div class="flex gap-3 pt-2">
-            <a href="/" class="w-1/2 text-center border border-gray-300 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-50 transition-colors text-sm">
-                Отмена
-            </a>
-            <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition-colors cursor-pointer text-sm">
-                Сохранить
+    <div id="section-isbn" class="bg-white p-6 rounded-2xl border border-gray-200 space-y-4">
+        <h3 class="text-base font-bold text-gray-800">Поиск книги по ISBN</h3>
+        <div class="flex gap-2">
+            <input type="text" id="isbn-input" placeholder="Например: 9785446109431" 
+                   class="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm">
+            <button onclick="searchByISBN()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-medium cursor-pointer transition-colors">
+                Найти
             </button>
         </div>
-    </form>
+    </div>
+
+    <div id="section-scan" class="bg-white p-6 rounded-2xl border border-gray-200 space-y-4 hidden">
+        <h3 class="text-base font-bold text-gray-800">Загрузка фотографии штрих-кода</h3>
+        <p class="text-xs text-gray-400">Сделайте четкое фото штрих-кода книги на камеру телефона или выберите файл.</p>
+        
+        <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-6 bg-gray-50 hover:bg-gray-100 transition-colors relative">
+            <input type="file" id="file-input" accept="image/*" onchange="uploadBarcode()" 
+                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+            <span class="text-3xl mb-2">📸</span>
+            <span class="text-sm font-medium text-indigo-600">Выбрать фото или сделать снимок</span>
+        </div>
+    </div>
+
+    <div id="loader" class="hidden text-center py-6 bg-white rounded-2xl border border-gray-200">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent text-indigo-600 rounded-full" role="status"></div>
+        <p class="text-sm text-gray-500 mt-2">Магия Go ищет вашу книгу... 🔮</p>
+    </div>
+
+    <div id="result-form-wrapper" class="bg-white p-6 rounded-2xl border border-gray-200 space-y-4 hidden">
+        <div class="border-b border-gray-100 pb-3">
+            <h3 class="text-base font-bold text-gray-800">Проверьте данные перед сохранением</h3>
+        </div>
+
+        <form id="save-book-form" onsubmit="saveBook(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Название</label>
+                <input type="text" id="res-title" required 
+                       class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm font-medium">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Авторы (через запятую)</label>
+                <input type="text" id="res-authors" required 
+                       class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">ISBN</label>
+                <input type="text" id="res-isbn" 
+                       class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm text-gray-500 bg-gray-50">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Описание / Аннотация</label>
+                <textarea id="res-description" rows="4" 
+                          class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-indigo-500 text-sm"></textarea>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <a href="/" class="w-1/2 text-center border border-gray-300 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-50 text-sm">
+                    Отмена
+                </a>
+                <button type="submit" class="w-1/2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-xl text-sm cursor-pointer transition-colors">
+                    📥 Поставить на полку
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    function switchTab(tab) {
+        const isbnBtn = document.getElementById('tab-isbn');
+        const scanBtn = document.getElementById('tab-scan');
+        const isbnSec = document.getElementById('section-isbn');
+        const scanSec = document.getElementById('section-scan');
+
+        if (tab === 'isbn') {
+            isbnBtn.className = "flex-1 text-center py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white transition-colors cursor-pointer";
+            scanBtn.className = "flex-1 text-center py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer";
+            isbnSec.classList.remove('hidden');
+            scanSec.classList.add('hidden');
+        } else {
+            scanBtn.className = "flex-1 text-center py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white transition-colors cursor-pointer";
+            isbnBtn.className = "flex-1 text-center py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer";
+            scanSec.classList.remove('hidden');
+            isbnSec.classList.add('hidden');
+        }
+    }
+
+    function showLoader(show) {
+        document.getElementById('loader').classList.toggle('hidden', !show);
+    }
+
+    function fillForm(data) {
+        document.getElementById('res-title').value = data.title || '';
+        document.getElementById('res-authors').value = data.authors ? data.authors.join(', ') : '';
+        document.getElementById('res-isbn').value = data.isbn || document.getElementById('isbn-input').value || '';
+        document.getElementById('res-description').value = data.description || '';
+        
+        document.getElementById('result-form-wrapper').classList.remove('hidden');
+    }
+
+    async function searchByISBN() {
+        const code = document.getElementById('isbn-input').value.trim();
+        if (!code) return alert('Введите код!');
+
+        document.getElementById('result-form-wrapper').classList.add('hidden');
+        showLoader(true);
+        try {
+            const response = await fetch(`/books/isbn?code=${code}`);
+            if (!response.ok) throw new Error('Книга не найдена во внешних базах данных');
+            
+            const data = await response.json();
+            fillForm(data);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            showLoader(false);
+        }
+    }
+
+    async function uploadBarcode() {
+        const fileInput = document.getElementById('file-input');
+        if (fileInput.files.length === 0) return;
+
+        showLoader(true);
+        
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        try {
+            const response = await fetch('/books/scan', {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) throw new Error('Не удалось распознать штрих-код. Сделайте фото ближе.');
+            
+            const data = await response.json();
+            fillForm(data);
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            showLoader(false);
+            fileInput.value = '';
+        }
+    }
+
+    async function saveBook(event) {
+        event.preventDefault();
+
+        const authorsRaw = document.getElementById('res-authors').value;
+        const authorsArray = authorsRaw.split(',').map(a => a.trim()).filter(a => a !== '');
+
+        const bookData = {
+			title: document.getElementById('res-title').value,
+			authors: authorsArray,
+			isbn: document.getElementById('res-isbn').value,
+			description: document.getElementById('res-description').value
+		};
+
+        try {
+            const response = await fetch('/books', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookData)
+            });
+
+            if (!response.ok) throw new Error('Ошибка сохранения книги в базу');
+
+            window.location.href = '/';
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+</script>
 {{end}}
