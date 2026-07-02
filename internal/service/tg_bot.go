@@ -7,6 +7,7 @@ import (
 	"home-library/internal/repository"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -143,6 +144,9 @@ func (s *TgBotService) handlePhoto(msg *tgbotapi.Message) {
 		s.bot.Send(tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Штрих-код считан: `%s`,\nно книга не найдена во внешних базах 🤷‍♂️", isbnCode)))
 		return
 	}
+
+	isbnCode = strings.TrimSpace(isbnCode)
+	isbnCode = strings.ReplaceAll(isbnCode, "-", "")
 
 	newBook := models.Book{
 		OwnerID:     user.ID,

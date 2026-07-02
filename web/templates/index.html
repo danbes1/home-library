@@ -94,23 +94,34 @@
         {{if .Books}}
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {{range .Books}}
-                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-bold text-gray-900 leading-tight mb-1">{{.Title}}</h4>
-                            <p class="text-sm text-gray-500 mb-2">{{range .Authors}}{{.}}{{end}}</p>
-                            {{if .Description}}
-                                <p class="text-xs text-gray-400 line-clamp-2 mb-4">{{.Description}}</p>
-                            {{end}}
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col justify-between gap-4">
+                        <div class="flex gap-4">
+                            <div class="w-20 h-28 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden border border-gray-100 flex items-center justify-center text-center">
+                                {{if .CoverURL}}
+                                    <img src="{{.CoverURL}}" alt="Обложка" class="w-full h-full object-cover">
+                                {{else}}
+                                    <span class="text-2xl text-gray-300">📖</span>
+                                {{end}}
+                            </div>
+
+                            <!-- Текстовая информация -->
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-gray-900 leading-tight mb-1 truncate" title="{{.Title}}">{{.Title}}</h4>
+                                <p class="text-sm text-gray-500 mb-2 truncate">{{range .Authors}}{{.}}{{end}}</p>
+                                {{if .Description}}
+                                    <p class="text-xs text-gray-400 line-clamp-3">{{.Description}}</p>
+                                {{end}}
+                            </div>
                         </div>
                         <div class="flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
                             <span class="text-gray-400">ISBN: {{.ISBN}}</span>
                             <span class="px-2 py-1 rounded-sm bg-gray-100 text-gray-600 font-medium">
                                 {{if eq .OwnerID $.User.ID}}Моя книга{{else}}Книга супруга{{end}}
                             </span>
+                            <button onclick="openLoanModal({{.ID}}, '{{.Title}}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                🤝 Отдать другу
+                            </button>
                         </div>
-                        <button onclick="openLoanModal({{.ID}}, '{{.Title}}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                            🤝 Отдать другу
-                        </button>
                     </div>
                 {{end}}
             </div>

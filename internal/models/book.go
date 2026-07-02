@@ -9,11 +9,13 @@ type Book struct {
 	Authors     []string  `json:"authors"`
 	ISBN        string    `json:"isbn,omitempty"`
 	Description string    `json:"description,omitempty"`
+	CoverURL    string    `json:"cover_url,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
 type CreateBookDTO struct {
-	Title   string   `json:"title"`
-	Authors []string `json:"authors"`
-	ISBN    string   `json:"isbn"`
+	Title    string   `json:"title"`
+	Authors  []string `json:"authors"`
+	ISBN     string   `json:"isbn"`
+	CoverURL string   `json:"cover_url"`
 }
