@@ -8,6 +8,7 @@ import (
 	"home-library/internal/repository"
 	"home-library/internal/service"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -25,11 +26,18 @@ func (h *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	books, err := h.bookRepo.GetAll(ctx)
+	userID, ok := GetUserIDFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Пользователь не аутентифицирован"})
+		return
+	}
+
+	books, err := h.bookRepo.GetAll(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -61,6 +69,19 @@ func (h *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if newBook.Title == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Поле title обязательное для заполнения"})
+		return
+	}
+
+	cleanISBN := strings.TrimSpace(newBook.ISBN)
+	cleanISBN = strings.ReplaceAll(cleanISBN, "-", "")
+
+	newBook.ISBN = cleanISBN
+
+	if len(newBook.ISBN) > 13 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "ISBN код слишком длинный(максимум 13 символов без учёта пробелов и дефисов)",
+		})
 		return
 	}
 
@@ -117,6 +138,7 @@ func (h *BookHandler) Scan(w http.ResponseWriter, r *http.Request) {
 		"title":       bookInfo.Title,
 		"authors":     bookInfo.Authors,
 		"description": bookInfo.Description,
+		"cover_url":   bookInfo.CoverURL,
 	})
 }
 

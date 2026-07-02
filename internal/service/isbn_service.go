@@ -126,6 +126,9 @@ func (s *ISBNService) fetchGoogleBooks(ctx context.Context, isbn string) (*model
 				Title       string   `json:"title"`
 				Authors     []string `json:"authors"`
 				Description string   `json:"description"`
+				ImageLinks  struct {
+					Thumbnail string `json:"thumbnail"`
+				} `json:"ImageLinks"`
 			} `json:"volumeInfo"`
 		} `json:"items"`
 	}
@@ -144,5 +147,6 @@ func (s *ISBNService) fetchGoogleBooks(ctx context.Context, isbn string) (*model
 		Title:       info.Title,
 		Authors:     info.Authors,
 		Description: info.Description,
+		CoverURL:    info.ImageLinks.Thumbnail,
 	}, nil
 }
