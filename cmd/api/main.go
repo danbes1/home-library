@@ -52,7 +52,7 @@ func main() {
 	loanHandler := handler.NewLoanHandler(loanRepo)
 	familyHandler := handler.NewFamilyHandler(userRepo)
 
-	webHandler := handler.NewWebHandler(bookRepo, userRepo)
+	webHandler := handler.NewWebHandler(bookRepo, userRepo, loanRepo)
 
 	r := chi.NewRouter()
 
@@ -95,7 +95,7 @@ func main() {
 
 		subRouter.Post("/loans", loanHandler.Create)
 		subRouter.Get("/loans/active", loanHandler.GetActiveLoans)
-		subRouter.Get("/loans/return", loanHandler.ReturnBook)
+		subRouter.Post("/loans/return", loanHandler.ReturnBook)
 
 		subRouter.Post("/family/create", familyHandler.Create)
 		subRouter.Post("/family/join", familyHandler.Join)

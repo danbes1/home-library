@@ -13,10 +13,11 @@ import (
 type WebHandler struct {
 	bookRepo *repository.BookRepository
 	userRepo *repository.UserRepository
+	loanRepo *repository.LoanRepository
 }
 
-func NewWebHandler(br *repository.BookRepository, ur *repository.UserRepository) *WebHandler {
-	return &WebHandler{bookRepo: br, userRepo: ur}
+func NewWebHandler(br *repository.BookRepository, ur *repository.UserRepository, lr *repository.LoanRepository) *WebHandler {
+	return &WebHandler{bookRepo: br, userRepo: ur, loanRepo: lr}
 }
 
 func (h *WebHandler) IndexPage(w http.ResponseWriter, r *http.Request) {
@@ -39,12 +40,16 @@ func (h *WebHandler) IndexPage(w http.ResponseWriter, r *http.Request) {
 		books = []models.Book{}
 	}
 
+	loans, err := h.loanRepo.GetActiveLoans(ctx, userID)
+
 	data := struct {
-		User  *models.User
-		Books []models.Book
+		User        *models.User
+		Books       []models.Book
+		ActiveLoans []models.Loan
 	}{
-		User:  user,
-		Books: books,
+		User:        user,
+		Books:       books,
+		ActiveLoans: loans,
 	}
 
 	basePath := filepath.Join("web", "templates", "base.html")
