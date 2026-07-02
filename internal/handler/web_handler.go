@@ -13,10 +13,11 @@ import (
 type WebHandler struct {
 	bookRepo *repository.BookRepository
 	userRepo *repository.UserRepository
+	loanRepo *repository.LoanRepository
 }
 
-func NewWebHandler(br *repository.BookRepository, ur *repository.UserRepository) *WebHandler {
-	return &WebHandler{bookRepo: br, userRepo: ur}
+func NewWebHandler(br *repository.BookRepository, ur *repository.UserRepository, lr *repository.LoanRepository) *WebHandler {
+	return &WebHandler{bookRepo: br, userRepo: ur, loanRepo: lr}
 }
 
 func (h *WebHandler) IndexPage(w http.ResponseWriter, r *http.Request) {
@@ -39,12 +40,16 @@ func (h *WebHandler) IndexPage(w http.ResponseWriter, r *http.Request) {
 		books = []models.Book{}
 	}
 
+	loans, err := h.loanRepo.GetActiveLoans(ctx, userID)
+
 	data := struct {
-		User  *models.User
-		Books []models.Book
+		User        *models.User
+		Books       []models.Book
+		ActiveLoans []models.Loan
 	}{
-		User:  user,
-		Books: books,
+		User:        user,
+		Books:       books,
+		ActiveLoans: loans,
 	}
 
 	basePath := filepath.Join("web", "templates", "base.html")
@@ -76,4 +81,22 @@ func (h *WebHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl.Execute(w, nil)
+}
+
+func (h *WebHandler) RegisterPage(w http.ResponseWriter, r *http.Request) {
+	if _, err := r.Cookie("jwt_token"); err == nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	tmpl, _ := template.ParseFiles(filepath.Join("web", "templates", "register.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.Execute(w, nil)
+}
+
+func (h *WebHandler) AddBookPage(w http.ResponseWriter, r *http.Request) {
+	basePath := filepath.Join("web", "templates", "base.html")
+	pagePath := filepath.Join("web", "templates", "add-book.html")
+	tmpl, _ := template.ParseFiles(basePath, pagePath)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl.ExecuteTemplate(w, "base", nil)
 }

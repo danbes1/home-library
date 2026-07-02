@@ -28,6 +28,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
+
+	if r.Header.Get("Content-Type") == "application/json" {
+		json.NewDecoder(r.Body).Decode(&req)
+	} else {
+		r.ParseForm()
+		req.Name = r.FormValue("name")
+		req.Email = r.FormValue("email")
+		req.Password = r.FormValue("password")
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid JSON"})
@@ -41,6 +51,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -115,7 +130,6 @@ func (h *AuthHandler) GenerateTelegramToken(w http.ResponseWriter, r *http.Reque
 
 	tokenStr := "auth_" + token.String()
 
-	// 3. Сохраняем токен в базу данных для этого пользователя
 	err = h.userRepo.SetAuthToken(ctx, userID, tokenStr)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -124,7 +138,6 @@ func (h *AuthHandler) GenerateTelegramToken(w http.ResponseWriter, r *http.Reque
 	}
 	tgLink := fmt.Sprintf("https://t.me/%s/%s", h.botName, tokenStr)
 
-	// 5. Возвращаем токен и готовую ссылку для фронтенда
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"token": tokenStr,

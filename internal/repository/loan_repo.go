@@ -55,7 +55,7 @@ func (r *LoanRepository) ReturnBook(ctx context.Context, loanID int) error {
 
 func (r *LoanRepository) GetActiveLoans(ctx context.Context, userID int) ([]models.Loan, error) {
 	query := `
-			SELECT l.id, l.book_id, l.borrower_name, l.loan_date, l.due_date
+			SELECT l.id, l.book_id, b.title, l.borrower_name, l.loan_date, l.due_date
 			FROM loans l
 			JOIN books b ON l.book_id = b.id
 			WHERE b.owner_id = $1 AND l.returned_at IS NULL
@@ -70,7 +70,7 @@ func (r *LoanRepository) GetActiveLoans(ctx context.Context, userID int) ([]mode
 
 	for rows.Next() {
 		var l models.Loan
-		err := rows.Scan(&l.ID, &l.BookID, &l.BorrowerName, &l.LoanDate, &l.DueDate)
+		err := rows.Scan(&l.ID, &l.BookID, &l.BookTitle, &l.BorrowerName, &l.LoanDate, &l.DueDate)
 		if err != nil {
 			return nil, err
 		}
